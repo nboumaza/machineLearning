@@ -53,15 +53,12 @@ If you haven't already started a standalone CDAP installation, start it with the
 
   $ cdap sdk start
 
-On Windows, substitute ``cdap.bat sdk`` for ``cdap sdk``.
 
 Deploy the Application to a CDAP instance defined by its host (defaults to localhost)::
 
   $ cdap cli load artifact target/MovieRecommender-<version>.jar
   $ cdap cli create app MovieRecommender MovieRecommender <version> user
   
-On Windows, substitute ``cdap.bat cli`` for ``cdap cli``.
-
 Start the Application Services::
 
   $ cdap cli start service MovieRecommender.MovieDictionaryService
@@ -77,7 +74,6 @@ Ingest ``ratings`` and ``movies`` data::
 
   $ bin/ingest-data.sh --host [host]
 
-On Windows, substitute ``ingest-data.bat`` for ``ingest-data.sh``.
 
 Run the ``RecommendationBuilder`` Spark Program::
 
@@ -109,24 +105,3 @@ To stop the application, execute::
   $ cdap cli stop service MovieRecommender.MovieDictionaryService
   $ cdap cli stop service MovieRecommender.MovieRecommenderService
 
-License
-=======
-
-Copyright © 2014-2016 Cask Data, Inc.
-
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
-in compliance with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under the License
-is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-or implied. See the License for the specific language governing permissions and limitations under
-the License.
-
-
-.. |(App)| image:: docs/img/App.png
-
-.. |(RecommendationBuilder)| image:: docs/img/RecommendationBuilder.png
-
-.. _CDAP: http://cdap.io
