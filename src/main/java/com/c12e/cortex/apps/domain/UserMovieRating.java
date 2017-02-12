@@ -1,11 +1,11 @@
-package com.c12e.cortex.apps.movierecommender;
+package com.c12e.cortex.apps.domain;
 
 import java.io.Serializable;
 
 /**
  * Represents user's ratings for different movies
  */
-public class UserScore implements Serializable {
+public class UserMovieRating implements Serializable {
 
   private static final long serialVersionUID = -1258765752695193629L;
 
@@ -13,7 +13,7 @@ public class UserScore implements Serializable {
   private final int movieID;
   private final int rating;
 
-  public UserScore(int userID, int movieID, int rating) {
+  public UserMovieRating(int userID, int movieID, int rating) {
     this.userID = userID;
     this.movieID = movieID;
     this.rating = rating;

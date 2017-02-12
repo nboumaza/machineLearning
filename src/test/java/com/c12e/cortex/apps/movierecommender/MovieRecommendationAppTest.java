@@ -10,9 +10,8 @@ import co.cask.common.http.HttpRequest;
 import co.cask.common.http.HttpRequests;
 import co.cask.common.http.HttpResponse;
 
-import com.c12e.cortex.apps.movierecommender.MovieDictionaryServiceHandler;
-import com.c12e.cortex.apps.movierecommender.MovieRecommenderServiceHandler;
-import com.c12e.cortex.apps.movierecommender.RecommendationBuilder;
+import com.c12e.cortex.apps.api.rest.MovieRecommendationService;
+import com.c12e.cortex.apps.api.rest.MovieStoreService;
 import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -29,12 +28,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Test for {@link MovieRecommenderApp}
+ * Test for {@link MovieRecommendationApp}
  */
-public class MovieRecommenderAppTest extends TestBase {
+public class MovieRecommendationAppTest extends TestBase {
 
   private static final Gson GSON = new Gson();
-  private static final Logger LOG = LoggerFactory.getLogger(MovieRecommenderAppTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MovieRecommendationAppTest.class);
 
   @ClassRule
   public static final TestConfiguration TEST_CONFIG = new TestConfiguration("explore.enabled", false);
@@ -42,18 +41,19 @@ public class MovieRecommenderAppTest extends TestBase {
   @Test
   public void testRecommendation() throws Exception {
 
-    ApplicationManager appManager = deployApplication(MovieRecommenderApp.class);
+    ApplicationManager appManager = deployApplication(MovieRecommendationApp.class);
 
     // Send movies data through service
     sendMovieData(appManager);
 
     // Inject ratings data
     sendRatingsData();
+    
     // Start the Spark Program
-    SparkManager sparkManager = appManager.getSparkManager(RecommendationBuilder.class.getSimpleName()).start();
+    SparkManager sparkManager = appManager.getSparkManager(SparkALSModelBuilder.class.getSimpleName()).start();
     sparkManager.waitForFinish(60, TimeUnit.SECONDS);
 
-    verifyRecommenderServiceHandler(appManager);
+    verifyRecommenderService(appManager);
   }
 
   /**
@@ -63,13 +63,13 @@ public class MovieRecommenderAppTest extends TestBase {
    * @throws InterruptedException
    * @throws IOException
    */
-  private void verifyRecommenderServiceHandler(ApplicationManager appManager) throws InterruptedException, IOException {
-    ServiceManager serviceManager = appManager.getServiceManager(MovieRecommenderApp.RECOMMENDATION_SERVICE).start();
+  private void verifyRecommenderService(ApplicationManager appManager) throws InterruptedException, IOException {
+    ServiceManager serviceManager = appManager.getServiceManager(MovieRecommendationApp.RECOMMENDATION_SERVICE).start();
     serviceManager.waitForStatus(true);
 
     // Verify that recommendation are generated
     String response =
-      doGet(new URL(serviceManager.getServiceURL(), MovieRecommenderServiceHandler.RECOMMEND + "/1"));
+      doGet(new URL(serviceManager.getServiceURL(), MovieRecommendationService.RECOMMEND + "/1"));
 
     Map<String, String[]> responseMap =
       GSON.fromJson(response, new TypeToken<Map<String, String[]>>() { }.getType());
@@ -85,15 +85,15 @@ public class MovieRecommenderAppTest extends TestBase {
   }
 
   /**
-   * Sends movies data to {@link MovieRecommenderApp#DICTIONARY_SERVICE}
+   * Sends raw movies data to {@link MovieRecommendationApp#MOVIE_STORE_SERVICE}
    */
   private void sendMovieData(ApplicationManager applicationManager) throws Exception {
     String moviesData = "0::Movie0\n1::Movie1\n2::Movie2\n3::Movie3\n";
     ServiceManager serviceManager =
-      applicationManager.getServiceManager(MovieRecommenderApp.DICTIONARY_SERVICE).start();
+      applicationManager.getServiceManager(MovieRecommendationApp.MOVIE_STORE_SERVICE).start();
     serviceManager.waitForStatus(true);
 
-    URL url = new URL(serviceManager.getServiceURL(), MovieDictionaryServiceHandler.STORE_MOVIES);
+    URL url = new URL(serviceManager.getServiceURL(), MovieStoreService.STORE_MOVIES);
     HttpRequest request = HttpRequest.post(url).withBody(moviesData, Charsets.UTF_8).build();
     HttpResponse response = HttpRequests.execute(request);
     Assert.assertEquals(200, response.getResponseCode());
@@ -101,10 +101,10 @@ public class MovieRecommenderAppTest extends TestBase {
   }
 
   /**
-   * Send some ratings to the Stream
+   * Send some raw ratings to the Stream
    */
   private void sendRatingsData() throws IOException {
-    StreamManager streamManager = getStreamManager(MovieRecommenderApp.RATINGS_STREAM);
+    StreamManager streamManager = getStreamManager(MovieRecommendationApp.RATINGS_STREAM);
     streamManager.send("0::0::3");
     streamManager.send("0::1::4");
     streamManager.send("1::1::4");

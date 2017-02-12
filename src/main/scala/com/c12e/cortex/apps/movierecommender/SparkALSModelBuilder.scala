@@ -6,17 +6,16 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.recommendation.{ALS, Rating}
 import org.apache.spark.rdd.RDD
 import org.slf4j.{Logger, LoggerFactory}
+import com.c12e.cortex.apps.domain.UserMovieRating;
 
 import scala.util.control.Exception._
 
 /**
  * Spark Program which makes recommendation for movies to users
  */
-class RecommendationBuilder extends SparkMain {
-  import RecommendationBuilder._
+class SparkALSModelBuilder extends SparkMain {
+  import SparkALSModelBuilder._
 
-  // SPARK-1006, SPARK-958, http://bugs.java.com/view_bug.do?bug_id=4152790. When running in local mode, num iterations
-  // cannot be more than 10 or it causes a StackOverflow error.
   case class Params(
                      numIterations: Int = 10,
                      lambda: Double = 1.0,
@@ -31,25 +30,25 @@ class RecommendationBuilder extends SparkMain {
     val params = parseArguments(sec, Params())
     LOG.info("Processing ratings data with parameters {}", params)
 
-    val userScores: RDD[String] = sc.fromStream("ratingsStream")
+    val userMovieRatings: RDD[String] = sc.fromStream("ratingsStream")
 
-    val usRDD = userScores.map { e =>
-      val userScore = e.split("::")
-      new UserScore(userScore(0).toInt, userScore(1).toInt, userScore(2).toInt)
+    val umrRDD = userMovieRatings.map { e =>
+      val userMovieRating = e.split("::")
+      new UserMovieRating(userMovieRating(0).toInt, userMovieRating(1).toInt, userMovieRating(2).toInt)
     }.cache()
-    val scores = usRDD.collect()
+    val scores = umrRDD.collect()
 
-    val ratingData = userScores.map { curUserScore =>
-      val userScore = curUserScore.toString.split("::")
+    val ratingData = userMovieRatings.map { curUserMovieRating =>
+      val userMovieRating = curUserMovieRating.toString.split("::")
       if (params.implicitPrefs) {
         /*
         * MovieLens ratings are on a scale of 1-5:
         * To map ratings to confidence scores, we subtract 2.5
         * 5 -> 2.5
         */
-        Rating(userScore(0).toInt, userScore(1).toInt, userScore(2).toDouble - 2.5)
+        Rating(userMovieRating(0).toInt, userMovieRating(1).toInt, userMovieRating(2).toDouble - 2.5)
       } else {
-        Rating(userScore(0).toInt, userScore(1).toInt, userScore(2).toDouble)
+        Rating(userMovieRating(0).toInt, userMovieRating(1).toInt, userMovieRating(2).toDouble)
       }
     }.cache()
 
@@ -67,7 +66,7 @@ class RecommendationBuilder extends SparkMain {
 
     val numMovies = moviesDataset.count()
 
-    println(s"Got $numRatings ratings from $numUsers users on $numRatedMovies movies out of $numMovies")
+    LOG.info(s"Got $numRatings ratings from $numUsers users on $numRatedMovies movies out of $numMovies")
 
 
     LOG.info("Calculating model")
@@ -93,14 +92,14 @@ class RecommendationBuilder extends SparkMain {
       sc.parallelize(model.predict(nr.map((curUser._1, _)))
         .collect().sortBy(-_.rating).take(20))
         .keyBy(x => Bytes.add(Bytes.toBytes(x.user), Bytes.toBytes(x.product)))
-        .map(x => (x._1, new UserScore(x._2.user, x._2.product, x._2.rating.toInt)))
+        .map(x => (x._1, new UserMovieRating(x._2.user, x._2.product, x._2.rating.toInt)))
         .saveAsDataset("recommendations")
     }
 
-    LOG.debug("Stored predictions in dataset. Done!")
+    LOG.debug("Stored predictions in dataset.")
   }
 
-  /** Parse runtime arguments */
+  /** Parse runtime arguments - use defaults if none are specified **/
   def parseArguments(sec: SparkExecutionContext, defaultParams: Params): Params = {
     val arguments: String = sec.getRuntimeArguments.get("args")
     val args: Array[String] = if (arguments == null) Array() else arguments.split("\\s")
@@ -123,6 +122,9 @@ class RecommendationBuilder extends SparkMain {
   def getBoolean(args: Array[String], idx: Int): Option[Boolean] = catching(classOf[Exception]).opt(args(idx).toBoolean)
 }
 
-object RecommendationBuilder {
-  val LOG: Logger = LoggerFactory.getLogger(classOf[RecommendationBuilder])
+/**
+ * companion object
+ */
+object SparkALSModelBuilder {
+  val LOG: Logger = LoggerFactory.getLogger(classOf[SparkALSModelBuilder])
 }

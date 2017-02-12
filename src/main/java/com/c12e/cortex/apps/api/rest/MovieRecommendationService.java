@@ -1,4 +1,4 @@
-package com.c12e.cortex.apps.movierecommender;
+package com.c12e.cortex.apps.api.rest;
 
 import co.cask.cdap.api.annotation.UseDataSet;
 import co.cask.cdap.api.common.Bytes;
@@ -14,16 +14,21 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
+import com.c12e.cortex.apps.domain.Recommendation;
+import com.c12e.cortex.apps.domain.UserMovieRating;
+
 /**
- * Handler that exposes HTTP API to retrieve recommended movies.
+ * Exposes HTTP API to retrieve recommended movies.
+ * 
  */
-public class MovieRecommenderServiceHandler extends AbstractHttpServiceHandler {
+public class MovieRecommendationService extends AbstractHttpServiceHandler {
   public static final String RECOMMEND = "recommend";
+  
   @UseDataSet("recommendations")
-  private ObjectStore<UserScore> recommendations;
+  private ObjectStore<UserMovieRating> recommendations;
 
   @UseDataSet("ratings")
-  private ObjectStore<UserScore> ratings;
+  private ObjectStore<UserMovieRating> ratings;
 
   @UseDataSet("movies")
   private ObjectStore<String> movies;
@@ -33,7 +38,7 @@ public class MovieRecommenderServiceHandler extends AbstractHttpServiceHandler {
   public void recommend(HttpServiceRequest request, HttpServiceResponder responder, @PathParam("userId") int userId) {
     byte[] userID = Bytes.toBytes(userId);
 
-    CloseableIterator<KeyValue<byte[], UserScore>> userRatings =
+    CloseableIterator<KeyValue<byte[], UserMovieRating>> userRatings =
       ratings.scan(userID, Bytes.stopKeyForPrefix(userID));
     try {
       if (!userRatings.hasNext()) {
@@ -42,7 +47,7 @@ public class MovieRecommenderServiceHandler extends AbstractHttpServiceHandler {
         return;
       }
 
-      CloseableIterator<KeyValue<byte[], UserScore>> userPredictions =
+      CloseableIterator<KeyValue<byte[], UserMovieRating>> userPredictions =
         recommendations.scan(userID, Bytes.stopKeyForPrefix(userID));
       try {
         if (!userPredictions.hasNext()) {
@@ -68,11 +73,11 @@ public class MovieRecommenderServiceHandler extends AbstractHttpServiceHandler {
    * @param userRatings user given rating to movies
    * @param userPredictions movie recommendation to user with predicted rating
    *
-   * @return {@link Recommendation} of watched and recommended movies
+   * @return Recommendation of watched and recommended movies
    */
   private Recommendation getRecommendation(ObjectStore<String> store,
-                                           CloseableIterator<KeyValue<byte[], UserScore>> userRatings,
-                                           CloseableIterator<KeyValue<byte[], UserScore>> userPredictions) {
+                                           CloseableIterator<KeyValue<byte[], UserMovieRating>> userRatings,
+                                           CloseableIterator<KeyValue<byte[], UserMovieRating>> userPredictions) {
     Recommendation recommendations = new Recommendation();
 
     while (userRatings.hasNext()) {

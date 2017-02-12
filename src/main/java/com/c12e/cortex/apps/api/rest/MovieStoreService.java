@@ -1,4 +1,4 @@
-package com.c12e.cortex.apps.movierecommender;
+package com.c12e.cortex.apps.api.rest;
 
 import co.cask.cdap.api.annotation.UseDataSet;
 import co.cask.cdap.api.common.Bytes;
@@ -15,9 +15,10 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
 /**
- * Handler that exposes HTTP API to update movie dictionary
+ * 
+ * Exposes HTTP API to update movie store
  */
-public class MovieDictionaryServiceHandler extends AbstractHttpServiceHandler {
+public class MovieStoreService extends AbstractHttpServiceHandler {
   private static final Pattern NEWLINE_DELIMITER = Pattern.compile("[\\r\\n]+");
   private static final Pattern FIELDS_DELIMITER = Pattern.compile("::");
   public static final String STORE_MOVIES = "storemovies";
@@ -27,6 +28,11 @@ public class MovieDictionaryServiceHandler extends AbstractHttpServiceHandler {
 
   @Path(STORE_MOVIES)
   @POST
+  /**
+   * parses and stores movie data
+   * @param request HTTP request
+   * @param responder HTTP response
+   */
   public void uploadHandler(HttpServiceRequest request, HttpServiceResponder responder) {
     ByteBuffer requestContents = request.getContent();
     if (requestContents == null) {

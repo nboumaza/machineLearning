@@ -1,11 +1,11 @@
-package com.c12e.cortex.apps.movierecommender;
+package com.c12e.cortex.apps.domain;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A class to collect rated and recommended movies.
+ * Collect rated and recommended movies.
  */
 public class Recommendation implements Serializable {
   private static final long serialVersionUID = -1258787639695193629L;
