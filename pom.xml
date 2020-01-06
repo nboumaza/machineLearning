@@ -28,7 +28,7 @@
     <!-- cortex 4.0.1 supported versions -->
     <target-jvm.version>1.7</target-jvm.version>
     <cdap.version>4.0.1</cdap.version>
-    <spark.version>1.6.1</spark.version>
+    <spark.version>2.4.4</spark.version>
     <scala.version>2.10.5</scala.version>
     <hadoop.version>2.3.0</hadoop.version>   
   </properties>
@@ -78,7 +78,7 @@
     <!-- spark -->
     <dependency>
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_2.10</artifactId>
+      <artifactId>spark-core_2.12</artifactId>
       <version>${spark.version}</version>
       <scope>provided</scope>
       <exclusions>
